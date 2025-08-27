@@ -46,7 +46,8 @@ const App: React.FC = () => {
         setStudyGuide(response);
       } catch (err) {
         console.error(err);
-        setError("Sorry, I couldn't generate the study guide. The topic might be too broad or there was an issue with the AI. Please try again with a more specific topic.");
+        const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+        setError(`Sorry, I couldn't generate the study guide. ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -55,19 +56,21 @@ const App: React.FC = () => {
       setChatHistory(prev => [...prev, userMessage]);
       
       try {
-        const responseText = await sendChatMessage(query);
+        // Pass the existing history to maintain conversation context
+        const responseText = await sendChatMessage(query, chatHistory);
         const modelMessage: ChatMessage = { role: 'model', content: responseText };
         setChatHistory(prev => [...prev, modelMessage]);
       } catch (err) {
         console.error(err);
-        const errorMessage: ChatMessage = { role: 'model', content: "I'm sorry, I encountered an error. Please try again." };
+        const errorMessageContent = err instanceof Error ? err.message : "I'm sorry, I encountered an error. Please try again.";
+        const errorMessage: ChatMessage = { role: 'model', content: errorMessageContent };
         setChatHistory(prev => [...prev, errorMessage]);
         setError("There was an issue communicating with the AI. Please check your connection and try again.");
       } finally {
         setIsLoading(false);
       }
     }
-  }, [mode]);
+  }, [mode, chatHistory]);
   
   const showWelcome = !isLoading && !error && !studyGuide && chatHistory.length === 0;
 
